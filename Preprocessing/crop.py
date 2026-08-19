@@ -124,14 +124,14 @@ def main() -> None:
         with open(ROOT / "crop_fallback.csv", "a", newline="", encoding="utf-8") as f:
             csv.writer(f).writerows(fallback_rows)
 
-    dt = time.time() - t0
-    print(f"\n{'='*50}")
-    print(f"  저장   {n_ok:,}장")
-    print(f"  건너뜀 {n_skip:,}장 (이미 있음)")
-    print(f"  전체사용 {n_fallback:,}장 (개를 못 찾음 → crop_fallback.csv)")
-    print(f"  실패   {n_fail:,}장")
-    print(f"  소요   {dt/60:.1f}분")
-    print("="*50)
+    # dt = time.time() - t0
+    # print(f"\n{'='*50}")
+    # print(f"  저장   {n_ok:,}장")
+    # print(f"  건너뜀 {n_skip:,}장 (이미 있음)")
+    # print(f"  전체사용 {n_fallback:,}장 (개를 못 찾음 → crop_fallback.csv)")
+    # print(f"  실패   {n_fail:,}장")
+    # print(f"  소요   {dt/60:.1f}분")
+    # print("="*50)
 
 
 if __name__ == "__main__":
