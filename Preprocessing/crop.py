@@ -20,14 +20,7 @@ DOG_CLASS = 16          # COCO에서 16번이 dog
 OUT_SIZE = 518
 EXPAND = 0.15
 
-
 def standard_crop(im: Image.Image, bbox, expand=EXPAND, out_size=OUT_SIZE) -> Image.Image:
-    """개 박스 → 정사각 out_size 이미지. 이 규칙 하나만 쓴다.
-
-    ① 여유 15%  ② 긴 변 기준 정사각  ③ 사진 경계로 자르기
-    ④ 모자란 곳 회색 채우기  ⑤ resize
-    늘리지 않고 회색을 채우는 이유: 억지로 늘리면 개 체형이 왜곡된다.
-    """
     W, H = im.size
     x1, y1, x2, y2 = map(float, bbox)
 
@@ -71,7 +64,7 @@ def list_images() -> list[Path]:
 def main() -> None:
     p = argparse.ArgumentParser()
     p.add_argument("--limit", type=int, default=None, help="앞에서 N장만 (테스트용)")
-    p.add_argument("--conf", type=float, default=0.25)
+    p.add_argument("--conf", type=float, default=0.05)
     args = p.parse_args()
 
     from ultralytics import YOLO
@@ -83,7 +76,7 @@ def main() -> None:
         images = images[::step][:args.limit]
     print(f"대상 {len(images):,}장")
 
-    model = YOLO(str(ROOT / "yolov8n.pt"))
+    model = YOLO("yolo11s.pt")
     DST.mkdir(exist_ok=True)
 
     n_ok = n_skip = n_fallback = n_fail = 0
