@@ -24,7 +24,7 @@ def index():
     return FileResponse('static/index.html')
 
 @app.post('/predict')
-async def api_predict(file: UploadFile = File(...)):
+def api_predict(file: UploadFile = File(...)):
     # 확장자 확인 — 아무 파일이나 받으면 안 된다
     suffix = Path(file.filename).suffix.lower()
     if suffix not in ALLOWED:
