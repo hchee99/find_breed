@@ -2,6 +2,8 @@ import shutil
 import tempfile
 from pathlib import Path
 
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from fastapi import FastAPI, File, HTTPException, UploadFile
 
 from Models.encoder import get_resnet_model
@@ -15,11 +17,11 @@ model = get_resnet_model()
 ALLOWED = {'.jpg', '.jpeg', '.png', '.webp', '.bmp'}
 MAX_MB = 20
 
+app.mount('/static', StaticFiles(directory='static'), name='static')
 
 @app.get('/')
-def root():
-    return {'message': '/docs 로 접속하면 테스트할 수 있습니다'}
-
+def index():
+    return FileResponse('static/index.html')
 
 @app.post('/predict')
 async def api_predict(file: UploadFile = File(...)):
