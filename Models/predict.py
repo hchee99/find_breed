@@ -15,8 +15,31 @@ RESULT_DIR = Path('result')
 
 # val 3,522장(개)과 Oxford 고양이로 잰 분포에서 정했다.
 #   0.42 → 개 98.9% 통과 / 고양이 0.0% 통과
-# 더 높이면 진짜 개를 거절하기만 하고 고양이 차단 효과는 그대로였다.
 THRESHOLD = 0.42
+
+# 서버에서는 요청마다 모델을 다시 불러오면 안 된다.
+# 처음 부를 때만 로딩하고 그다음부터는 같은 것을 재사용한다.
+_yolo = None
+_protos = None
+
+
+def get_yolo():
+    global _yolo
+    if _yolo is None:
+        _yolo = YOLO('yolo11s.pt')
+    return _yolo
+
+
+def get_protos(proto_path='prototypes.npz'):
+    global _protos
+    if _protos is None:
+        d = np.load(proto_path, allow_pickle=True)
+        _protos = (
+            [str(b) for b in d['breeds']],
+            d['prototypes'],
+            d['global_mean'],
+        )
+    return _protos
 
 
 def predict(image_path, model, proto_path='prototypes.npz',
@@ -30,8 +53,8 @@ def predict(image_path, model, proto_path='prototypes.npz',
     im = ImageOps.exif_transpose(im).convert('RGB')
 
     # 2. YOLO로 개 찾기
-    yolo = YOLO('yolo11s.pt')
-    res = yolo.predict(im, conf=conf, classes=[DOG_CLASS], verbose=False)[0]
+    res = get_yolo().predict(im, conf=conf, classes=[DOG_CLASS],
+                             verbose=False)[0]
 
     if res.boxes is not None and len(res.boxes) > 0:
         k = int(res.boxes.conf.argmax())
@@ -51,11 +74,9 @@ def predict(image_path, model, proto_path='prototypes.npz',
     vec = (vec / vec.norm(dim=1, keepdim=True)).cpu().numpy()[0]
 
     # 5. 대표값과 같은 조건으로 맞추기
-    d = np.load(proto_path, allow_pickle=True)
-    breeds = [str(b) for b in d['breeds']]
-    protos = d['prototypes']
+    breeds, protos, gmean = get_protos(proto_path)
 
-    vec = vec - d['global_mean']
+    vec = vec - gmean
     vec = vec / max(np.linalg.norm(vec), 1e-12)
 
     # 6. 133종과 비교
@@ -65,7 +86,7 @@ def predict(image_path, model, proto_path='prototypes.npz',
     max_sim = float(sims[order[0]])
     unknown = max_sim < threshold
 
-    # 7. 퍼센트로. 거절하더라도 순위는 계산해서 함께 돌려준다 —
+    # 7. 퍼센트로. 거절하더라도 순위는 함께 돌려준다 —
     #    여기서 비워 버리면 정작 믹스견에게 아무 정보도 못 준다.
     logits = sims / 0.1
     logits = logits - logits.max()              # exp 폭발 방지
@@ -90,17 +111,14 @@ def save_result(image_path, im, bbox, crop, result):
     RESULT_DIR.mkdir(exist_ok=True)
     stem = image_path.stem
 
-    # ① 원본에 네모 그려서 저장 — 엉뚱한 곳을 잡았는지 확인용
     marked = im.copy()
     draw = ImageDraw.Draw(marked)
-    width = max(3, int(min(im.size) * 0.006))   # 사진 크기에 비례한 선 두께
+    width = max(3, int(min(im.size) * 0.006))
     draw.rectangle(bbox, outline=(232, 93, 46), width=width)
     marked.save(RESULT_DIR / f'{stem}_bbox.jpg', quality=90)
 
-    # ② 모델이 실제로 본 518px 사진
     crop.save(RESULT_DIR / f'{stem}_crop.jpg', quality=92)
 
-    # ③ 결과 숫자 — 한 파일에 계속 쌓는다
     log = RESULT_DIR / 'results.csv'
     new = not log.exists()
     with open(log, 'a', newline='', encoding='utf-8-sig') as f:
