@@ -24,24 +24,20 @@ def standard_crop(im: Image.Image, bbox, expand=EXPAND, out_size=OUT_SIZE) -> Im
     W, H = im.size
     x1, y1, x2, y2 = map(float, bbox)
 
-    # ① 여유
     bw, bh = x2 - x1, y2 - y1
     x1 -= bw * expand; x2 += bw * expand
     y1 -= bh * expand; y2 += bh * expand
 
-    # ② 정사각 (중심 고정, 긴 변 기준)
     bw, bh = x2 - x1, y2 - y1
     side = max(bw, bh)
     cx, cy = (x1 + x2) / 2, (y1 + y2) / 2
     x1, x2 = cx - side / 2, cx + side / 2
     y1, y2 = cy - side / 2, cy + side / 2
 
-    # ③ 사진 밖으로 나간 부분 잘라내기
     ix1, iy1 = max(0, round(x1)), max(0, round(y1))
     ix2, iy2 = min(W, round(x2)), min(H, round(y2))
     crop = im.crop((ix1, iy1, ix2, iy2))
 
-    # ④ 모자란 만큼 회색으로 채워 정사각 복구
     cw, ch = crop.size
     if cw != ch:
         side_px = max(cw, ch)
@@ -50,7 +46,6 @@ def standard_crop(im: Image.Image, bbox, expand=EXPAND, out_size=OUT_SIZE) -> Im
         crop = canvas
 
     return crop.resize((out_size, out_size), Image.BILINEAR)
-
 
 def list_images() -> list[Path]:
     breeds = sorted(d for d in SRC.iterdir()
@@ -74,7 +69,6 @@ def main() -> None:
         # 테스트일 때는 견종이 골고루 섞이도록 건너뛰며 고른다
         step = max(1, len(images) // args.limit)
         images = images[::step][:args.limit]
-    print(f"대상 {len(images):,}장")
 
     model = YOLO("yolo11s.pt")
     DST.mkdir(exist_ok=True)
@@ -112,13 +106,13 @@ def main() -> None:
                 n_ok += 1
         except Exception as e:
             n_fail += 1
-            print(f"  [실패] {src.name}: {type(e).__name__}")
+            # print(f"  [실패] {src.name}: {type(e).__name__}")
 
         if i % 500 == 0:
             done = i
             speed = done / (time.time() - t0)
             left = (len(images) - done) / speed / 60
-            print(f"  {done:,}/{len(images):,}  ({speed:.1f}장/초, 남은 시간 {left:.1f}분)")
+            # print(f"  {done:,}/{len(images):,}  ({speed:.1f}장/초, 남은 시간 {left:.1f}분)")
 
     if fallback_rows:
         with open(ROOT / "crop_fallback.csv", "a", newline="", encoding="utf-8") as f:
