@@ -41,7 +41,7 @@ def evaluate(model, proto_path='prototypes.npz', split='val', cap=None):
 
     # 2. 평가할 사진 목록
     paths, labels = load_split_images(split, cap)
-    print(f'{split} {len(paths):,}장 인코딩 중...')
+    # print(f'{split} {len(paths):,}장 인코딩 중...')   # 진행 상황 (디버그용)
 
     # 3. 벡터로
     vecs = encode(model, paths)       # (N, 2048)

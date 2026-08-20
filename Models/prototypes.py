@@ -48,8 +48,9 @@ def build_prototypes(model, selection, subtract_mean=True):
     vecs_by_breed = {}
     for i, (breed, paths) in enumerate(selection.items(), 1):
         vecs_by_breed[breed] = encode(model, paths)
-        if i % 20 == 0:
-            print(f'  {i}/{len(selection)}종 완료')
+        # 진행 상황 출력 (디버그용)
+        # if i % 20 == 0:
+        #     print(f'  {i}/{len(selection)}종 완료')
 
     # 2. 전체 평균 = "그냥 개다움"
     all_vecs = np.concatenate(list(vecs_by_breed.values()), axis=0)
